@@ -36,7 +36,12 @@ jobs:
         id: checkov
         run: |
           checkov --version
-          checkov -d . --framework terraform --output cli --output sarif --output-file-path results_sarif --soft-fail
+          checkov -d . --framework terraform --output cli --output sarif --output-file-path results.sarif --soft-fail
+          # Check if the file exists and list all files for debugging
+          echo "Contents of current directory:"
+          ls -la
+          echo "Looking for SARIF file:"
+          find . -name "*.sarif" -type f
         continue-on-error: true
 
       - name: Generate Checkov report
@@ -46,7 +51,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const checkPath = 'results_sarif.sarif'; 
+            const checkPath = 'results.sarif'; 
             if (fs.existsSync(checkPath)) {
               const sarifResults = JSON.parse(fs.readFileSync(checkPath, 'utf8'));
               const results = sarifResults.runs[0].results || [];
@@ -95,5 +100,5 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         if: success() || failure()
         with:
-          sarif_file: results_sarif.sarif
+          sarif_file: results.sarif
           wait-for-processing: true

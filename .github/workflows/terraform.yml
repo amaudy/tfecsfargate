@@ -1,0 +1,61 @@
+name: Terraform Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Validate Main Module
+        id: validate_main
+        run: |
+          cd $GITHUB_WORKSPACE
+          terraform init -backend=false
+          terraform validate
+          
+      - name: Validate Simple Example
+        id: validate_simple
+        run: |
+          cd $GITHUB_WORKSPACE/examples/simple
+          terraform init -backend=false
+          terraform validate
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: true
+
+      - name: Run tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: |
+          tflint --init
+          tflint --format=sarif > tflint.sarif
+
+      - name: Upload TFLint SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        if: success() || failure()
+        with:
+          sarif_file: tflint.sarif
+          wait-for-processing: true

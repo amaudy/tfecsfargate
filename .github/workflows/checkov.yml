@@ -36,7 +36,7 @@ jobs:
         id: checkov
         run: |
           checkov --version
-          checkov -d . --framework terraform --output github_actions --output cli --soft-fail
+          checkov -d . --framework terraform --output cli --output sarif --output-file-path results.sarif --soft-fail
         continue-on-error: true
 
       - name: Generate Checkov report
